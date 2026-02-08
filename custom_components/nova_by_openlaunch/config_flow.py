@@ -4,19 +4,17 @@ from __future__ import annotations
 import asyncio
 import logging
 from typing import Any
-from urllib.parse import urlparse
 
 import voluptuous as vol
 import websockets
 
-from homeassistant.components import ssdp
+from homeassistant.components.zeroconf import ZeroconfServiceInfo
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_NAME
 
 from .const import (
     DEFAULT_PORT,
     DOMAIN,
-    SSDP_ST,
     CONF_MANUFACTURER,
     CONF_MODEL,
     CONF_SERIAL,
@@ -79,47 +77,30 @@ class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_ssdp(
-        self, discovery_info: ssdp.SsdpServiceInfo
+    async def async_step_zeroconf(
+        self, discovery_info: ZeroconfServiceInfo
     ) -> ConfigFlowResult:
-        """Handle SSDP discovery."""
-        _LOGGER.debug("SSDP discovery: %s", discovery_info)
+        """Handle Zeroconf/mDNS discovery."""
+        _LOGGER.debug("Zeroconf discovery: %s", discovery_info)
 
-        # Extract device info from SSDP headers
-        location = discovery_info.ssdp_location or ""
-        parsed = urlparse(location)
+        props = discovery_info.properties
 
-        self._discovered_host = parsed.hostname or discovery_info.ssdp_headers.get(
-            "X-HOSTNAME", ""
-        )
-        self._discovered_port = parsed.port or DEFAULT_PORT
+        self._discovered_host = str(discovery_info.host)
+        self._discovered_port = discovery_info.port or DEFAULT_PORT
 
-        # Extract device code from X-HOSTNAME (e.g., "openlaunch-novaj03c" -> "j03c")
-        # Use this to create a friendly default name like "NOVA j03c"
-        hostname = discovery_info.ssdp_headers.get("X-HOSTNAME", "")
-        device_code = None
-        if hostname.startswith("openlaunch-nova"):
-            device_code = hostname[len("openlaunch-nova"):]
+        # Device info from mDNS TXT records
+        self._discovered_manufacturer = props.get("manufacturer", "Open Launch")
+        self._discovered_model = props.get("model", "NOVA")
+        self._discovered_serial = props.get("serial")
 
-        if device_code:
-            self._discovered_name = f"NOVA {device_code}"
-        else:
-            # Fall back to X-FRIENDLY-NAME or default
-            self._discovered_name = discovery_info.ssdp_headers.get(
-                "X-FRIENDLY-NAME", "NOVA by Open Launch"
-            )
-        self._discovered_manufacturer = discovery_info.ssdp_headers.get(
-            "X-MANUFACTURER", "Open Launch"
-        )
-        self._discovered_model = discovery_info.ssdp_headers.get("X-MODEL", "NOVA")
-
-        # Use hostname as serial (e.g., "openlaunch-novaj03c")
-        self._discovered_serial = hostname if hostname else None
+        self._discovered_name = discovery_info.name.removesuffix(
+            f".{discovery_info.type}"
+        ) or "NOVA by Open Launch"
 
         if not self._discovered_host:
             return self.async_abort(reason="no_host")
 
-        # Set unique ID based on serial or host:port
+        # Use serial as unique ID — hardware-stable across network changes
         unique_id = self._discovered_serial or f"{self._discovered_host}:{self._discovered_port}"
         await self.async_set_unique_id(unique_id)
         self._abort_if_unique_id_configured(
@@ -132,12 +113,12 @@ class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
         # Show confirmation dialog
         self.context["title_placeholders"] = {"name": self._discovered_name}
 
-        return await self.async_step_ssdp_confirm()
+        return await self.async_step_zeroconf_confirm()
 
-    async def async_step_ssdp_confirm(
+    async def async_step_zeroconf_confirm(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle user confirmation of SSDP discovered device."""
+        """Handle user confirmation of Zeroconf discovered device."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -159,7 +140,7 @@ class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
-            step_id="ssdp_confirm",
+            step_id="zeroconf_confirm",
             data_schema=vol.Schema(
                 {
                     vol.Required(

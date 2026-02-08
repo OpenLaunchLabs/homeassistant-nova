@@ -10,7 +10,7 @@
           "port": "Port"
         }
       },
-      "ssdp_confirm": {
+      "zeroconf_confirm": {
         "title": "Discovered: {name}",
         "description": "A NOVA by Open Launch device was discovered on your network.\n\n**Device:** {model}\n**Manufacturer:** {manufacturer}\n**Address:** {host}:{port}",
         "data": {

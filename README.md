@@ -2,11 +2,11 @@
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=OpenLaunchLabs&repository=homeassistant-nova&category=integration)
 
-A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. Connects to your device via WebSocket and exposes shot data as sensor entities. Supports automatic discovery via SSDP.
+A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. Connects to your device via WebSocket and exposes shot data as sensor entities. Supports automatic discovery via mDNS/Zeroconf.
 
 ## Features
 
-- **Automatic Discovery**: Devices are automatically discovered via SSDP (UPnP)
+- **Automatic Discovery**: Devices are automatically discovered via mDNS/Zeroconf
 - **WebSocket Connection**: Real-time data streaming from your launch monitor
 - **Shot Data Sensors**: Ball speed, launch angles, spin rate, and more
 - **Status Sensors**: Device uptime, firmware version, shot count
@@ -53,7 +53,7 @@ A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. 
 ### Automatic Discovery (Recommended)
 
 1. Ensure your NOVA device is powered on and connected to your network
-2. Home Assistant will automatically discover the device via SSDP
+2. Home Assistant will automatically discover the device via mDNS
 3. Go to Settings → Devices & Services
 4. You should see a notification about the discovered device
 5. Click "Configure" and confirm the device name
@@ -70,16 +70,13 @@ A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. 
 
 ## Protocol
 
-This integration uses a custom WebSocket + SSDP protocol.
+This integration uses WebSocket for data streaming, discovered via mDNS/Zeroconf.
 
-### SSDP Discovery
+### mDNS Discovery
 
-The device responds to SSDP M-SEARCH requests with:
-- **ST**: `urn:openlaunch:service:websocket:1`
-- **LOCATION**: WebSocket server URL (e.g., `http://192.168.1.100:2920/`)
-- **X-FRIENDLY-NAME**: Device display name
-- **X-MANUFACTURER**: "Open Launch"
-- **X-MODEL**: "NOVA"
+The device advertises the following mDNS service:
+- **Service type**: `_openlaunch-ws._tcp.local.`
+- **TXT records**: `manufacturer`, `model`, `version`, `hostname`, `serial`
 
 ### WebSocket Messages
 
@@ -111,7 +108,7 @@ The device responds to SSDP M-SEARCH requests with:
 
 ### Device not discovered
 - Ensure the device and Home Assistant are on the same network/subnet
-- Check that multicast traffic (SSDP) is not blocked by your router
+- Check that multicast traffic (mDNS) is not blocked by your router
 - Try manual configuration with the device's IP address
 
 ### Connection issues
