@@ -2,34 +2,31 @@
 
 [![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=OpenLaunchLabs&repository=homeassistant-nova&category=integration)
 
-A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. Connects to your device via WebSocket and exposes shot data as sensor entities. Supports automatic discovery via mDNS/Zeroconf.
+A Home Assistant HACS integration for [NOVA](https://openlaunch.io) golf launch monitors by Open Launch. Connects to your device via WebSocket and exposes real-time shot data as sensor entities with automatic mDNS discovery.
+
+![Example setup showing NOVA device info, sensors, automations, and activity in Home Assistant](images/example-setup.png)
 
 ## Features
 
-- **Automatic Discovery**: Devices are automatically discovered via mDNS/Zeroconf
-- **WebSocket Connection**: Real-time data streaming from your launch monitor
-- **Shot Data Sensors**: Ball speed, launch angles, spin rate, and more
-- **Status Sensors**: Device uptime, firmware version, shot count
-- **Auto-Reconnect**: Automatically reconnects if connection is lost
-- **HACS Compatible**: Easy installation via Home Assistant Community Store
+- **Automatic Discovery** - Devices are automatically discovered via mDNS/Zeroconf
+- **Real-Time Shot Data** - Ball speed, launch angles, spin rate, and more via WebSocket
+- **Status Monitoring** - Device uptime and connection status
+- **Auto-Reconnect** - Automatically reconnects if connection is lost
+- **HACS Compatible** - Easy installation via Home Assistant Community Store
 
-## Sensors
+## Prerequisites
 
-### Shot Data (updated on each shot)
-| Sensor | Unit | Description |
-|--------|------|-------------|
-| Ball Speed | m/s | Ball velocity at launch (1 decimal) |
-| Vertical Launch Angle | ° | Launch angle (up/down, 1 decimal) |
-| Horizontal Launch Angle | ° | Launch angle (left/right, 1 decimal) |
-| Total Spin | rpm | Ball spin rate (whole number) |
-| Spin Axis | ° | Spin axis tilt (whole number) |
-| Shot Number | - | Current shot count |
-| Last Shot | - | Time since last shot |
+- [HACS](https://hacs.xyz) installed in your Home Assistant instance
+- NOVA device powered on and connected to your local network
+- Home Assistant and NOVA on the same network/subnet (required for mDNS discovery)
 
-### Status Data (updated periodically)
-| Sensor | Unit | Description |
-|--------|------|-------------|
-| Uptime | s | Device uptime (whole seconds) |
+## Quick Start
+
+1. Install via HACS (see below)
+2. Power on your NOVA - Home Assistant will discover it automatically
+3. Click the discovery notification and confirm the device name
+
+That's it. Sensors will populate as you hit shots.
 
 ## Installation
 
@@ -54,19 +51,63 @@ A Home Assistant HACS integration for NOVA golf launch monitors by Open Launch. 
 
 1. Ensure your NOVA device is powered on and connected to your network
 2. Home Assistant will automatically discover the device via mDNS
-3. Go to Settings → Devices & Services
-4. You should see a notification about the discovered device
+3. Go to **Settings > Devices & Services**
+4. You should see a discovery notification for your NOVA device
 5. Click "Configure" and confirm the device name
 
 ### Manual Configuration
 
-1. Go to Settings → Devices & Services
+If automatic discovery doesn't work (e.g., different subnets), you can add the device manually:
+
+1. Go to **Settings > Devices & Services**
 2. Click "Add Integration"
 3. Search for "NOVA by Open Launch"
 4. Enter your device details:
    - **Name**: A friendly name for your device
    - **Host**: IP address of your launch monitor
    - **Port**: WebSocket port (default: 2920)
+
+## Sensors
+
+### Shot Data (updated on each shot)
+
+| Sensor | Unit | Description |
+|--------|------|-------------|
+| Ball Speed | m/s | Ball velocity at launch |
+| Vertical Launch Angle | ° | Launch angle (up/down) |
+| Horizontal Launch Angle | ° | Launch angle (left/right) |
+| Total Spin | rpm | Ball spin rate |
+| Spin Axis | ° | Spin axis tilt |
+| Session Shot Count | - | Running shot count for the session |
+| Last Shot | - | Timestamp of most recent shot |
+
+### Status Data (updated periodically)
+
+| Sensor | Unit | Description |
+|--------|------|-------------|
+| Connection | - | Connected/Disconnected |
+| Uptime | s | Device uptime |
+
+## Troubleshooting
+
+### Device not discovered
+
+- Confirm the NOVA and Home Assistant are on the same subnet
+- Check that mDNS/multicast traffic is not blocked by your router or VLAN configuration
+- Try a manual configuration with the device's IP address (check your router's client list to find it)
+
+### Cannot connect (manual setup)
+
+- Verify the device is powered on and connected to the network
+- Confirm you can reach the device IP from your Home Assistant host
+- Check that port 2920 is not blocked by a firewall
+- Check Home Assistant logs under **Settings > System > Logs** for connection errors
+
+### Sensors show "unavailable"
+
+- The WebSocket connection is not active - the integration retries every 10 seconds automatically
+- Verify the device is still reachable on the network
+- Restart the integration from **Settings > Devices & Services**
 
 ## Protocol
 
@@ -104,27 +145,10 @@ The device advertises the following mDNS service:
 }
 ```
 
-## Troubleshooting
-
-### Device not discovered
-- Ensure the device and Home Assistant are on the same network/subnet
-- Check that multicast traffic (mDNS) is not blocked by your router
-- Try manual configuration with the device's IP address
-
-### Connection issues
-- Verify the device is powered on and connected to the network
-- Check Home Assistant logs for connection errors
-- The integration will automatically retry every 10 seconds
-
-### Sensors show "unavailable"
-- This indicates the WebSocket connection is not active
-- Check that the device is reachable
-- Restart the integration from Settings → Devices & Services
-
 ## License
 
 Apache License 2.0 - see [LICENSE](LICENSE) for details.
 
 ## Credits
 
-Developed for Open Launch NOVA launch monitors.
+Developed for [Open Launch](https://openlaunch.io) NOVA launch monitors.
