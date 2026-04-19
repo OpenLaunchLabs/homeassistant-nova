@@ -16,6 +16,7 @@ from websockets.exceptions import (
 )
 
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DOMAIN, RECONNECT_INTERVAL
@@ -29,6 +30,7 @@ class NovaByOpenLaunchCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
         hass: HomeAssistant,
+        entry_id: str,
         host: str,
         port: int,
         name: str,
@@ -42,6 +44,7 @@ class NovaByOpenLaunchCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER,
             name=f"{DOMAIN}_{name}",
         )
+        self.entry_id = entry_id
         self.host = host
         self.port = port
         self.device_name = name
@@ -58,6 +61,7 @@ class NovaByOpenLaunchCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         # Store latest data by message type
         self._shot_data: dict[str, Any] = {}
         self._status_data: dict[str, Any] = {}
+        self._last_fw_version: str | None = None
 
     @property
     def connected(self) -> bool:
@@ -207,12 +211,24 @@ class NovaByOpenLaunchCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.async_set_updated_data({"type": "shot", "data": data})
             elif msg_type == "status":
                 self._status_data = data
+                self._update_device_sw_version(data.get("firmware_version"))
                 self.async_set_updated_data({"type": "status", "data": data})
             else:
                 _LOGGER.warning("Unknown message type: %s", msg_type)
 
         except json.JSONDecodeError as err:
             _LOGGER.error("Failed to parse JSON message: %s", err)
+
+    @callback
+    def _update_device_sw_version(self, fw_version: str | None) -> None:
+        """Push firmware version into the device registry when it changes."""
+        if not fw_version or fw_version == self._last_fw_version:
+            return
+        self._last_fw_version = fw_version
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, self.entry_id)})
+        if device and device.sw_version != fw_version:
+            registry.async_update_device(device.id, sw_version=fw_version)
 
     async def async_test_connection(self) -> bool:
         """Test connection to the device."""

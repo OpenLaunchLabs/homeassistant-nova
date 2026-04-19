@@ -21,6 +21,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     coordinator = NovaByOpenLaunchCoordinator(
         hass,
+        entry_id=entry.entry_id,
         host=entry.data[CONF_HOST],
         port=entry.data[CONF_PORT],
         name=entry.data[CONF_NAME],
