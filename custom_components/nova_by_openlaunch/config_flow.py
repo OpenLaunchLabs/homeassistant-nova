@@ -9,7 +9,7 @@ from typing import Any
 import voluptuous as vol
 import websockets
 
-from homeassistant.components.zeroconf import ZeroconfServiceInfo
+from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_NAME
 
