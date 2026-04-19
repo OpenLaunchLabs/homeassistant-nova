@@ -19,14 +19,11 @@ DOMAIN = "nova_by_openlaunch"
 DEFAULT_PORT = 2920
 RECONNECT_INTERVAL = 10  # seconds
 
-# SSDP Discovery
-SSDP_ST = "urn:openlaunch:service:websocket:1"
-
 CONF_HOST = "host"
 CONF_PORT = "port"
 CONF_NAME = "name"
 
-# Device info from SSDP
+# Device info from discovery
 CONF_MANUFACTURER = "manufacturer"
 CONF_MODEL = "model"
 CONF_SERIAL = "serial"
