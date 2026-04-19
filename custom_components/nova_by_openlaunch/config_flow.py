@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import ipaddress
 import logging
 from typing import Any
 
@@ -21,6 +22,16 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _normalize_host(host: str) -> str:
+    """Bracket raw IPv6 literals so they're safe in ws://host:port URIs."""
+    try:
+        if isinstance(ipaddress.ip_address(host), ipaddress.IPv6Address):
+            return f"[{host}]"
+    except ValueError:
+        pass
+    return host
 
 
 class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -44,7 +55,7 @@ class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            host = user_input[CONF_HOST]
+            host = _normalize_host(user_input[CONF_HOST])
             port = user_input[CONF_PORT]
 
             if await self._test_connection(host, port):
@@ -85,7 +96,7 @@ class NovaByOpenLaunchConfigFlow(ConfigFlow, domain=DOMAIN):
 
         props = discovery_info.properties
 
-        self._discovered_host = str(discovery_info.host)
+        self._discovered_host = _normalize_host(str(discovery_info.host))
         self._discovered_port = discovery_info.port or DEFAULT_PORT
 
         # Device info from mDNS TXT records
